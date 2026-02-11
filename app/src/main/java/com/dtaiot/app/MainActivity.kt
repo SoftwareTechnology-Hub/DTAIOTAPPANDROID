@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var progressBar: ProgressBar
     lateinit var errorLayout: LinearLayout   // add this line
     lateinit var retryButton: Button
-    
+
 
 
     private fun isInternetAvailable(): Boolean {
@@ -77,7 +77,9 @@ class MainActivity : AppCompatActivity() {
                 webView.loadUrl("about:blank") // 🔑 prevents error flash
 
                 webView.postDelayed({
-                    webView.loadUrl("https://dtaiotweb.pythonanywhere.com")
+                    val extraHeaders = mapOf("X-APP" to "AIOT_APP")
+
+                    webView.loadUrl("https://dtaiotweb.pythonanywhere.com", extraHeaders)
                 }, 300)
             }
         }
@@ -89,7 +91,7 @@ class MainActivity : AppCompatActivity() {
 
         // Hide WebView identity
         webView.settings.userAgentString =
-            webView.settings.userAgentString.replace("wv", "")
+            webView.settings.userAgentString + " wv"
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -99,8 +101,19 @@ class MainActivity : AppCompatActivity() {
 
 
 //        webView.webViewClient = WebViewClient()
+        val extraHeaders = mapOf("X-APP" to "AIOT_APP")
 
         webView.webViewClient = object : WebViewClient() {
+        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                // Only intercept GET requests to add extra header
+                if (request?.method == "GET") {
+                    val extraHeaders = mapOf("X-APP" to "AIOT_APP")
+                    view?.loadUrl(request.url.toString(), extraHeaders)
+                    return true // we handled the GET
+                }
+                // Let POST requests (login/signup) go normally
+                return false
+            }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 progressBar.visibility = View.VISIBLE
@@ -153,7 +166,8 @@ class MainActivity : AppCompatActivity() {
 
         // 🔗 YOUR DJANGO URL
         if (isInternetAvailable()) {
-            webView.loadUrl("https://dtaiotweb.pythonanywhere.com")
+            val extraHeaders = mapOf("X-APP" to "AIOT_APP")
+            webView.loadUrl("https://dtaiotweb.pythonanywhere.com", extraHeaders)
         } else {
             showCustomError(null)
         }
